@@ -199,24 +199,13 @@
                     </div>
                 </div>
 
-                <!-- Scores Section -->
-                <div class="grid grid-cols-2 gap-4 mb-5">
-                    <div class="bg-gradient-to-br from-teal-50 to-white p-4 rounded-2xl border border-teal-100 text-center shadow-sm">
-                        <p class="text-xs sm:text-sm text-teal-600 font-medium mb-1">คะแนนเก็บก่อนกลางภาค</p>
-                        <p id="res-score-เก็บ" class="text-3xl font-bold text-teal-700"></p>
-                    </div>
-                    <div class="bg-gradient-to-br from-cyan-50 to-white p-4 rounded-2xl border border-cyan-100 text-center shadow-sm">
-                        <p class="text-xs sm:text-sm text-cyan-600 font-medium mb-1">คะแนนสอบกลางภาค</p>
-                        <p id="res-score-กลางภาค" class="text-3xl font-bold text-cyan-700"></p>
-                    </div>
-                </div>
-
-                <!-- Total Score -->
-                <div class="bg-gradient-to-r from-teal-500 to-cyan-500 p-1 rounded-2xl shadow-md mb-2">
-                    <div class="bg-white/95 backdrop-blur rounded-xl p-4 flex justify-between items-center">
-                        <span class="font-semibold text-slate-700 text-lg">รวมคะแนนทั้งหมด</span>
+                <!-- Score Section -->
+                <div class="bg-gradient-to-r from-teal-500 to-cyan-500 p-1 rounded-2xl shadow-md mb-2 mt-4">
+                    <div class="bg-white/95 backdrop-blur rounded-xl p-6 flex flex-col justify-center items-center">
+                        <span class="font-semibold text-slate-500 text-sm mb-2">คะแนนสอบที่ได้</span>
                         <div class="flex items-baseline">
-                            <span id="res-total" class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600"></span>
+                            <span id="res-score" class="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600"></span>
+                            <span class="text-2xl font-bold text-slate-400 ml-1">/10</span>
                         </div>
                     </div>
                 </div>
@@ -277,23 +266,23 @@
         function processData(rawData) {
             studentData = rawData.map(row => {
                 const keys = Object.keys(row);
-                // Helper function เพื่อค้นหาชื่อคอลัมน์จาก Keyword เผื่อหัวตารางตั้งชื่อมาหลากหลายแบบ
+                // Helper function เพื่อค้นหาชื่อคอลัมน์จาก Keyword
                 const findKey = (keywords) => keys.find(k => keywords.some(kw => k.toLowerCase().includes(kw.toLowerCase()))) || null;
                 
                 const roomKey = findKey(['ห้อง', 'room', 'ชั้น']);
                 const numberKey = findKey(['เลขที่', 'no', 'number']);
                 const idKey = findKey(['รหัส', 'id', 'ประจำตัว']);
                 const nameKey = findKey(['ชื่อ', 'name', 'สกุล']);
-                const keepKey = findKey(['เก็บ', 'keep', 'ก่อนกลางภาค', 'คะแนนเก็บ']);
-                const midKey = findKey(['กลางภาค', 'mid', 'สอบ', 'คะแนนสอบ']);
+                
+                // ดึงคะแนนจากคอลัมน์ E (คอลัมน์ที่ 5 หรือ index 4 ของ Array keys) แน่นอน
+                const scoreKey = keys.length > 4 ? keys[4] : null;
 
                 return {
                     room: roomKey ? String(row[roomKey]).trim() : "",
                     number: numberKey ? parseInt(row[numberKey]) : 0,
                     id: idKey ? String(row[idKey]).trim() : "",
                     name: nameKey ? row[nameKey] : "ไม่ระบุชื่อ",
-                    score_keep: keepKey ? row[keepKey] : "0",
-                    score_mid: midKey ? row[midKey] : "0"
+                    score: scoreKey ? row[scoreKey] : "0" // เก็บค่าคะแนนช่องเดียว
                 };
             }).filter(s => s.id && s.id !== ""); // Filter out invalid rows
 
@@ -392,23 +381,21 @@
             document.getElementById('res-number').textContent = student.number;
             document.getElementById('res-id').textContent = student.id;
             
-            document.getElementById('res-score-เก็บ').textContent = student.score_keep;
-            document.getElementById('res-score-กลางภาค').textContent = student.score_mid;
-            
-            const total = (Number(student.score_keep) || 0) + (Number(student.score_mid) || 0);
-            document.getElementById('res-total').textContent = total;
+            // แสดงคะแนนเดียว เต็ม 10
+            const score = Number(student.score) || 0;
+            document.getElementById('res-score').textContent = score;
 
             const statusMsg = document.getElementById('status-message');
-            // เกณฑ์คะแนนสามารถปรับเปลี่ยนได้ตามต้องการ
-            if(total >= 40) {
-                statusMsg.innerHTML = '<i class="fa-solid fa-face-smile-beam mr-1"></i> เยี่ยมมาก! พยายามรักษามาตรฐานไว้นะ';
-                statusMsg.className = "mt-5 text-center text-sm font-medium py-3 rounded-xl bg-teal-50 text-teal-700 border border-teal-100";
-            } else if (total >= 25) {
+            // เกณฑ์คะแนน (เต็ม 10, ผ่าน 5)
+            if(score >= 8) {
+                statusMsg.innerHTML = '<i class="fa-solid fa-face-smile-beam mr-1"></i> เยี่ยมมาก! คะแนนดีเยี่ยมเลย';
+                statusMsg.className = "mt-4 text-center text-sm font-medium py-3 rounded-xl bg-teal-50 text-teal-700 border border-teal-100";
+            } else if (score >= 5) {
                  statusMsg.innerHTML = '<i class="fa-solid fa-thumbs-up mr-1"></i> ผ่านเกณฑ์แล้ว พยายามอีกนิดนะ';
-                 statusMsg.className = "mt-5 text-center text-sm font-medium py-3 rounded-xl bg-cyan-50 text-cyan-700 border border-cyan-100";
+                 statusMsg.className = "mt-4 text-center text-sm font-medium py-3 rounded-xl bg-cyan-50 text-cyan-700 border border-cyan-100";
             } else {
                 statusMsg.innerHTML = '<i class="fa-solid fa-hand-fist mr-1"></i> ต้องพยายามให้มากขึ้นนะ สู้ๆ!';
-                statusMsg.className = "mt-5 text-center text-sm font-medium py-3 rounded-xl bg-amber-50 text-amber-700 border border-amber-100";
+                statusMsg.className = "mt-4 text-center text-sm font-medium py-3 rounded-xl bg-amber-50 text-amber-700 border border-amber-100";
             }
 
             searchCard.classList.add('hidden');
