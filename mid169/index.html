@@ -1,34 +1,238 @@
-<!-- ... existing code ... -->
-    <title>ระบบตรวจสอบคะแนนสอบ - วิชา ค22101</title>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบตรวจสอบคะแนนสอบ - ค22101</title>
+    
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load PapaParse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <!-- Load FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Load Google Fonts (Kanit) -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<!-- ... existing code ... -->
-```
 
-เพิ่มส่วนโหลดข้อมูล (Loading Overlay) ไว้ด้านใน `search-card`
-```html:ระบบตรวจสอบคะแนนสอบ:index.html
-<!-- ... existing code ... -->
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #e0f2f1; /* Light teal background */
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(173,100%,76%,0.4) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(192,100%,77%,0.4) 0px, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 40px -10px rgba(0, 128, 128, 0.15);
+        }
+
+        .input-field {
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(20, 184, 166, 0.2);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        /* Hide number input arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="text-slate-700 antialiased flex flex-col justify-center items-center p-4 py-10 relative">
+
+    <!-- Decorative background elements -->
+    <div class="fixed top-20 left-10 w-64 h-64 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob pointer-events-none"></div>
+    <div class="fixed top-40 right-10 w-64 h-64 bg-cyan-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000 pointer-events-none"></div>
+
+    <div class="w-full max-w-lg mx-auto relative z-10">
+        <!-- Header -->
+        <div class="text-center mb-8 animate-fade-in-up">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 shadow-lg mb-4 text-white">
+                <i class="fa-solid fa-graduation-cap text-4xl"></i>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600 mb-2">
+                ระบบตรวจสอบคะแนน
+            </h1>
+            <div class="inline-block bg-white/60 backdrop-blur px-4 py-2 rounded-2xl border border-white/50 shadow-sm">
+                <p class="text-teal-800 font-medium">วิชา ค22101 คณิตศาสตร์พื้นฐาน3 (1.5 นก.)</p>
+                <p class="text-sm text-teal-600 mt-1"><i class="fa-solid fa-chalkboard-user mr-1"></i>ผู้สอน : นายกฤษฎา สาแก้ว</p>
+            </div>
         </div>
 
         <!-- Main Form Card -->
         <div id="search-card" class="glass-panel rounded-3xl p-6 sm:p-8 animate-fade-in-up relative overflow-hidden" style="animation-delay: 0.1s;">
-            <!-- Initial Loading Overlay -->
+            
+            <!-- Initial Loading Overlay (For Google Sheets) -->
             <div id="initial-loading" class="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center transition-opacity duration-500">
-                <i class="fa-solid fa-cloud-arrow-down fa-bounce text-4xl text-teal-500 mb-4"></i>
+                <div class="relative w-16 h-16 mb-4">
+                    <div class="absolute inset-0 rounded-full border-4 border-teal-100"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-teal-500 border-t-transparent animate-spin"></div>
+                    <i class="fa-solid fa-cloud-arrow-down absolute inset-0 m-auto flex items-center justify-center text-teal-500 text-xl"></i>
+                </div>
                 <p class="text-teal-700 font-medium animate-pulse">กำลังซิงค์ข้อมูลจากระบบ...</p>
             </div>
 
             <form id="check-form" class="space-y-5">
-                
                 <!-- Class Selection -->
-<!-- ... existing code ... -->
-```
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1 ml-1">ห้องเรียน <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-door-open text-teal-400"></i>
+                        </div>
+                        <select id="room" required class="input-field block w-full pl-11 pr-4 py-3.5 bg-white/70 border border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent appearance-none">
+                            <option value="" disabled selected>-- เลือกห้องเรียน --</option>
+                            <!-- Options will be populated by JS -->
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-chevron-down text-slate-400 text-sm"></i>
+                        </div>
+                    </div>
+                </div>
 
-เปลี่ยน Script ทั้งหมดเพื่อเชื่อมต่อ API กับ Google Sheets ของคุณ (ให้แทนที่ `<script> ... </script>` ด้านล่างสุดทั้งหมดครับ)
-```html:ระบบตรวจสอบคะแนนสอบ:index.html
-<!-- ... existing code ... -->
-        <div class="mt-8 text-center text-xs text-slate-400">
+                <!-- Student Number -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1 ml-1">เลขที่ <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-list-ol text-teal-400"></i>
+                        </div>
+                        <input type="number" id="student-number" required placeholder="กรอกเลขที่ของนักเรียน" class="input-field block w-full pl-11 pr-4 py-3.5 bg-white/70 border border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent">
+                    </div>
+                </div>
+
+                <!-- Student ID -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1 ml-1">รหัสประจำตัวนักเรียน <span class="text-red-400">*</span></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-id-card text-teal-400"></i>
+                        </div>
+                        <input type="text" id="student-id" required placeholder="กรอกรหัสประจำตัว 5 หลัก" class="input-field block w-full pl-11 pr-4 py-3.5 bg-white/70 border border-slate-200 rounded-2xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent">
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="error-message" class="hidden bg-red-50 text-red-600 text-sm p-4 rounded-2xl border border-red-100 flex items-start mt-2">
+                    <i class="fa-solid fa-circle-exclamation mt-0.5 mr-2"></i>
+                    <span id="error-text">ไม่พบข้อมูลนักเรียน กรุณาตรวจสอบอีกครั้ง</span>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full mt-4 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium py-3.5 px-4 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex justify-center items-center group">
+                    <span>ตรวจสอบคะแนน</span>
+                    <i class="fa-solid fa-arrow-right ml-2 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
+                </button>
+            </form>
+
+            <!-- Loading Spinner (Searching) -->
+            <div id="loading" class="hidden absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex-col justify-center items-center rounded-3xl">
+                <i class="fa-solid fa-spinner fa-spin-pulse text-4xl text-teal-500 mb-3"></i>
+                <p class="text-teal-700 font-medium">กำลังค้นหาข้อมูล...</p>
+            </div>
+        </div>
+
+        <!-- Result Card (Hidden by default) -->
+        <div id="result-card" class="hidden glass-panel rounded-3xl p-6 sm:p-8 mt-4 relative overflow-hidden border-t-4 border-t-teal-400">
+            <!-- Decorative corner elements -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-teal-100 rounded-full opacity-50 blur-2xl"></div>
+            <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-cyan-100 rounded-full opacity-50 blur-2xl"></div>
+
+            <div class="relative z-10">
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-teal-100 text-teal-600 mb-3">
+                        <i class="fa-solid fa-user-check text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-800">ผลการเรียนของคุณ</h2>
+                </div>
+
+                <div class="bg-white/60 rounded-2xl p-4 sm:p-5 mb-5 shadow-sm border border-slate-100">
+                    <div class="grid grid-cols-1 gap-y-3">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center pb-3 border-b border-slate-200/60 border-dashed">
+                            <span class="text-sm text-slate-500 mb-1 sm:mb-0"><i class="fa-regular fa-id-badge mr-2 w-4"></i>ชื่อ-นามสกุล</span>
+                            <span id="res-name" class="font-semibold text-slate-800 text-lg"></span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center pb-3 border-b border-slate-200/60 border-dashed">
+                            <span class="text-sm text-slate-500 mb-1 sm:mb-0"><i class="fa-solid fa-door-open mr-2 w-4"></i>ชั้น/ห้อง</span>
+                            <span id="res-room" class="font-medium text-slate-700"></span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center pb-3 border-b border-slate-200/60 border-dashed">
+                            <span class="text-sm text-slate-500 mb-1 sm:mb-0"><i class="fa-solid fa-list-ol mr-2 w-4"></i>เลขที่</span>
+                            <span id="res-number" class="font-medium text-slate-700"></span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                            <span class="text-sm text-slate-500 mb-1 sm:mb-0"><i class="fa-solid fa-id-card mr-2 w-4"></i>รหัสประจำตัว</span>
+                            <span id="res-id" class="font-medium text-slate-700 font-mono"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scores Section -->
+                <div class="grid grid-cols-2 gap-4 mb-5">
+                    <div class="bg-gradient-to-br from-teal-50 to-white p-4 rounded-2xl border border-teal-100 text-center shadow-sm">
+                        <p class="text-xs sm:text-sm text-teal-600 font-medium mb-1">คะแนนเก็บก่อนกลางภาค</p>
+                        <p id="res-score-เก็บ" class="text-3xl font-bold text-teal-700"></p>
+                    </div>
+                    <div class="bg-gradient-to-br from-cyan-50 to-white p-4 rounded-2xl border border-cyan-100 text-center shadow-sm">
+                        <p class="text-xs sm:text-sm text-cyan-600 font-medium mb-1">คะแนนสอบกลางภาค</p>
+                        <p id="res-score-กลางภาค" class="text-3xl font-bold text-cyan-700"></p>
+                    </div>
+                </div>
+
+                <!-- Total Score -->
+                <div class="bg-gradient-to-r from-teal-500 to-cyan-500 p-1 rounded-2xl shadow-md mb-2">
+                    <div class="bg-white/95 backdrop-blur rounded-xl p-4 flex justify-between items-center">
+                        <span class="font-semibold text-slate-700 text-lg">รวมคะแนนทั้งหมด</span>
+                        <div class="flex items-baseline">
+                            <span id="res-total" class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="status-message" class="mt-4 text-center text-sm font-medium py-3 rounded-xl">
+                    <!-- Status message injected here -->
+                </div>
+
+                <button id="btn-back" class="w-full mt-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3.5 px-4 rounded-2xl transition-colors duration-200 flex justify-center items-center">
+                    <i class="fa-solid fa-rotate-left mr-2"></i>
+                    กลับไปหน้าค้นหา
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-10 text-center text-xs text-slate-400">
             &copy; 2026 ระบบตรวจสอบคะแนนรายวิชา<br>
             พัฒนาเพื่อการศึกษา
         </div>
@@ -37,6 +241,7 @@
     <script>
         // --- Globals ---
         let studentData = [];
+        // URL ของ Google Sheets (CSV)
         const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSbqAjvy5PrTTaYR5idww0FFJG2dJKisKB0utndZA-q9EDCMk5uCPoYnZMIJp9-HH-iOJU-92js7ll/pub?gid=1421287147&single=true&output=csv";
 
         // --- DOM Elements ---
@@ -61,8 +266,8 @@
                 error: function(err) {
                     console.error("Error loading CSV:", err);
                     initialLoadingDiv.innerHTML = `
-                        <i class="fa-solid fa-circle-xmark text-4xl text-red-500 mb-4"></i>
-                        <p class="text-red-600 font-medium text-center px-4">ไม่สามารถโหลดข้อมูลได้<br>กรุณารีเฟรชหน้าเว็บอีกครั้ง</p>
+                        <i class="fa-solid fa-circle-xmark text-5xl text-red-400 mb-4 drop-shadow-md"></i>
+                        <p class="text-slate-700 font-medium text-center px-4">ไม่สามารถโหลดข้อมูลจากระบบได้<br><span class="text-sm text-slate-500">กรุณาลองรีเฟรชหน้าเว็บอีกครั้ง</span></p>
                     `;
                 }
             });
@@ -72,15 +277,15 @@
         function processData(rawData) {
             studentData = rawData.map(row => {
                 const keys = Object.keys(row);
-                // Helper to find column name by matching keywords (เผื่อหัวตารางตั้งชื่อมาหลากหลายแบบ)
+                // Helper function เพื่อค้นหาชื่อคอลัมน์จาก Keyword เผื่อหัวตารางตั้งชื่อมาหลากหลายแบบ
                 const findKey = (keywords) => keys.find(k => keywords.some(kw => k.toLowerCase().includes(kw.toLowerCase()))) || null;
                 
                 const roomKey = findKey(['ห้อง', 'room', 'ชั้น']);
                 const numberKey = findKey(['เลขที่', 'no', 'number']);
                 const idKey = findKey(['รหัส', 'id', 'ประจำตัว']);
                 const nameKey = findKey(['ชื่อ', 'name', 'สกุล']);
-                const keepKey = findKey(['เก็บ', 'keep', 'ก่อนกลางภาค']);
-                const midKey = findKey(['กลางภาค', 'mid', 'สอบ']);
+                const keepKey = findKey(['เก็บ', 'keep', 'ก่อนกลางภาค', 'คะแนนเก็บ']);
+                const midKey = findKey(['กลางภาค', 'mid', 'สอบ', 'คะแนนสอบ']);
 
                 return {
                     room: roomKey ? String(row[roomKey]).trim() : "",
@@ -100,8 +305,12 @@
             uniqueRooms.forEach(room => {
                 const option = document.createElement('option');
                 option.value = room;
-                // Format room name for display (เช่น ถ้าเขียนมาแค่ 1 ให้กลายเป็น ห้อง 1, ถ้ามี / ให้เป็น ม.2/1)
-                option.textContent = room.startsWith('ม.') ? room : (room.includes('/') ? `ม.${room}` : `ห้อง ${room}`);
+                // Format room name for display (เช่น ถ้าในไฟล์เขียนแค่ 1 จะกลายเป็น ม.2/1 หรือ ห้อง 1 ขึ้นกับบริบท)
+                if(room.includes('/')) {
+                    option.textContent = room.startsWith('ม.') ? room : `ม.${room}`;
+                } else {
+                    option.textContent = `ห้อง ${room}`;
+                }
                 roomSelect.appendChild(option);
             });
 
@@ -120,32 +329,40 @@
             
             const room = document.getElementById('room').value;
             const number = parseInt(document.getElementById('student-number').value);
-            const id = document.getElementById('student-id').value;
+            const id = document.getElementById('student-id').value.trim();
 
             if(!room || !number || !id) {
                 showError('กรุณากรอกข้อมูลให้ครบถ้วน');
                 return;
             }
 
-            form.classList.add('hidden');
             loadingDiv.classList.remove('hidden');
             loadingDiv.classList.add('flex');
 
+            // หน่วงเวลาจำลองการค้นหาให้ดูน่าเชื่อถือ
             setTimeout(() => {
                 searchStudent(room, number, id);
-            }, 600);
+            }, 800);
         });
 
         btnBack.addEventListener('click', function() {
             resultCard.style.display = 'none';
             searchCard.classList.remove('hidden');
-            form.classList.remove('hidden');
+            
+            // Clear specific fields if you want, or leave them for easy re-checking
+            // document.getElementById('student-id').value = ''; 
+            
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Add slight animation when coming back
+            searchCard.classList.remove('animate-fade-in-up');
+            void searchCard.offsetWidth; // trigger reflow
+            searchCard.classList.add('animate-fade-in-up');
         });
 
         // --- Core Logic ---
         function searchStudent(room, number, id) {
-            // Find student from loaded CSV data
+            // ค้นหานักเรียนจากข้อมูลที่โหลดมา (เช็คทั้งห้อง, เลขที่, รหัส)
             const student = studentData.find(s => 
                 s.room === room && 
                 s.number === number && 
@@ -158,14 +375,20 @@
             if (student) {
                 displayResult(student);
             } else {
-                form.classList.remove('hidden');
-                showError('ไม่พบข้อมูลนักเรียน กรุณาตรวจสอบความถูกต้องของข้อมูลอีกครั้ง');
+                showError('ไม่พบข้อมูล หรือคุณกรอกรหัสประจำตัวไม่ถูกต้อง');
             }
         }
 
         function displayResult(student) {
             document.getElementById('res-name').textContent = student.name;
-            document.getElementById('res-room').textContent = student.room;
+            
+            // Format room for display
+            let displayRoom = student.room;
+            if(displayRoom.includes('/')) {
+                displayRoom = displayRoom.startsWith('ม.') ? displayRoom : `ม.${displayRoom}`;
+            }
+            document.getElementById('res-room').textContent = displayRoom;
+            
             document.getElementById('res-number').textContent = student.number;
             document.getElementById('res-id').textContent = student.id;
             
@@ -176,20 +399,22 @@
             document.getElementById('res-total').textContent = total;
 
             const statusMsg = document.getElementById('status-message');
+            // เกณฑ์คะแนนสามารถปรับเปลี่ยนได้ตามต้องการ
             if(total >= 40) {
-                statusMsg.textContent = "เยี่ยมมาก! พยายามรักษามาตรฐานไว้นะ";
-                statusMsg.className = "mt-4 text-center text-sm font-medium py-2 rounded-lg bg-teal-50 text-teal-700 border border-teal-100";
+                statusMsg.innerHTML = '<i class="fa-solid fa-face-smile-beam mr-1"></i> เยี่ยมมาก! พยายามรักษามาตรฐานไว้นะ';
+                statusMsg.className = "mt-5 text-center text-sm font-medium py-3 rounded-xl bg-teal-50 text-teal-700 border border-teal-100";
             } else if (total >= 25) {
-                 statusMsg.textContent = "ผ่านเกณฑ์แล้ว พยายามอีกนิดนะ";
-                 statusMsg.className = "mt-4 text-center text-sm font-medium py-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-100";
+                 statusMsg.innerHTML = '<i class="fa-solid fa-thumbs-up mr-1"></i> ผ่านเกณฑ์แล้ว พยายามอีกนิดนะ';
+                 statusMsg.className = "mt-5 text-center text-sm font-medium py-3 rounded-xl bg-cyan-50 text-cyan-700 border border-cyan-100";
             } else {
-                statusMsg.textContent = "ต้องพยายามให้มากขึ้นนะ สู้ๆ!";
-                statusMsg.className = "mt-4 text-center text-sm font-medium py-2 rounded-lg bg-amber-50 text-amber-700 border border-amber-100";
+                statusMsg.innerHTML = '<i class="fa-solid fa-hand-fist mr-1"></i> ต้องพยายามให้มากขึ้นนะ สู้ๆ!';
+                statusMsg.className = "mt-5 text-center text-sm font-medium py-3 rounded-xl bg-amber-50 text-amber-700 border border-amber-100";
             }
 
             searchCard.classList.add('hidden');
             resultCard.style.display = 'block';
             
+            // Trigger animation
             resultCard.classList.remove('animate-fade-in-up');
             void resultCard.offsetWidth;
             resultCard.classList.add('animate-fade-in-up');
@@ -198,22 +423,14 @@
         function showError(message) {
             document.getElementById('error-text').textContent = message;
             errorDiv.classList.remove('hidden');
-            searchCard.classList.add('animate-[shake_0.5s_ease-in-out]');
-            setTimeout(() => {
-                searchCard.classList.remove('animate-[shake_0.5s_ease-in-out]');
-            }, 500);
+            
+            // Trigger shake animation
+            searchCard.classList.remove('animate-shake');
+            void searchCard.offsetWidth; // trigger reflow
+            searchCard.classList.add('animate-shake');
         }
 
-        const style = document.createElement('style');
-        style.innerHTML = `
-            @keyframes shake {
-                0%, 100% { transform: translateX(0); }
-                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                20%, 40%, 60%, 80% { transform: translateX(5px); }
-            }
-        `;
-        document.head.appendChild(style);
-
+        // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', init);
 
     </script>
