@@ -1,279 +1,33 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- ... existing code ... -->
     <title>ระบบตรวจสอบคะแนนสอบ - วิชา ค22101</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Kanit', 'sans-serif'],
-                    },
-                    colors: {
-                        teal: {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            200: '#99f6e4',
-                            300: '#5eead4',
-                            400: '#2dd4bf',
-                            500: '#14b8a6',
-                            600: '#0d9488',
-                            700: '#0f766e',
-                            800: '#115e59',
-                            900: '#134e4a',
-                        },
-                        cyan: {
-                            50: '#ecfeff',
-                            100: '#cffafe',
-                            500: '#06b6d4',
-                            600: '#0891b2',
-                        }
-                    },
-                    animation: {
-                        'gradient-x': 'gradient-x 3s ease infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
-                    },
-                    keyframes: {
-                        'gradient-x': {
-                            '0%, 100%': {
-                                'background-size': '200% 200%',
-                                'background-position': 'left center'
-                            },
-                            '50%': {
-                                'background-size': '200% 200%',
-                                'background-position': 'right center'
-                            },
-                        },
-                        'float': {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
-                        },
-                        'fadeInUp': {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            background-color: #f0fdfa;
-            background-image: 
-                radial-gradient(at 40% 20%, hsla(173,100%,76%,0.15) 0px, transparent 50%),
-                radial-gradient(at 80% 0%, hsla(189,100%,56%,0.15) 0px, transparent 50%),
-                radial-gradient(at 0% 50%, hsla(175,100%,77%,0.15) 0px, transparent 50%);
-            background-attachment: fixed;
-            min-height: 100vh;
-        }
-        
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 10px 40px -10px rgba(13, 148, 136, 0.15);
-        }
+<!-- ... existing code ... -->
+```
 
-        .input-field {
-            transition: all 0.3s ease;
-        }
-        .input-field:focus {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.15);
-        }
-
-        /* Custom Select Styling */
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1em;
-        }
-
-        #result-card {
-            display: none; /* Hidden initially */
-        }
-    </style>
-</head>
-<body class="text-slate-800 antialiased flex flex-col items-center justify-center py-10 px-4 min-h-screen relative overflow-x-hidden">
-
-    <!-- Decorative Blobs -->
-    <div class="absolute top-[-10%] left-[-10%] w-64 h-64 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
-    <div class="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-cyan-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float" style="animation-delay: 2s;"></div>
-
-    <div class="w-full max-w-md z-10">
-        
-        <!-- Header -->
-        <div class="text-center mb-8 animate-fade-in-up">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-teal-400 to-cyan-500 text-white shadow-lg shadow-teal-500/30 mb-4">
-                <i class="fa-solid fa-graduation-cap text-2xl"></i>
-            </div>
-            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-700 to-cyan-600 mb-2">
-                ระบบตรวจสอบคะแนน
-            </h1>
-            <div class="bg-white/60 backdrop-blur-sm rounded-2xl py-3 px-4 shadow-sm inline-block border border-teal-100">
-                <p class="text-sm font-semibold text-teal-800 mb-1">วิชา ค22101 คณิตศาสตร์พื้นฐาน 3 (1.5 นก.)</p>
-                <p class="text-xs text-slate-500 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-chalkboard-user text-cyan-600"></i>
-                    ผู้สอน: นายกฤษฎา สาแก้ว
-                </p>
-            </div>
+เพิ่มส่วนโหลดข้อมูล (Loading Overlay) ไว้ด้านใน `search-card`
+```html:ระบบตรวจสอบคะแนนสอบ:index.html
+<!-- ... existing code ... -->
         </div>
 
         <!-- Main Form Card -->
-        <div id="search-card" class="glass-panel rounded-3xl p-6 sm:p-8 animate-fade-in-up" style="animation-delay: 0.1s;">
+        <div id="search-card" class="glass-panel rounded-3xl p-6 sm:p-8 animate-fade-in-up relative overflow-hidden" style="animation-delay: 0.1s;">
+            <!-- Initial Loading Overlay -->
+            <div id="initial-loading" class="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center transition-opacity duration-500">
+                <i class="fa-solid fa-cloud-arrow-down fa-bounce text-4xl text-teal-500 mb-4"></i>
+                <p class="text-teal-700 font-medium animate-pulse">กำลังซิงค์ข้อมูลจากระบบ...</p>
+            </div>
+
             <form id="check-form" class="space-y-5">
                 
                 <!-- Class Selection -->
-                <div>
-                    <label for="room" class="block text-sm font-medium text-slate-700 mb-2 ml-1">
-                        <i class="fa-solid fa-users-class text-teal-500 mr-2"></i>ชั้นเรียน
-                    </label>
-                    <div class="relative">
-                        <select id="room" name="room" required
-                            class="input-field block w-full pl-4 pr-10 py-3.5 text-base border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent sm:text-sm rounded-2xl bg-white text-slate-700 shadow-sm transition-shadow">
-                            <option value="" disabled selected>-- เลือกห้องเรียน --</option>
-                            <!-- Rooms will be populated by JS -->
-                        </select>
-                    </div>
-                </div>
+<!-- ... existing code ... -->
+```
 
-                <!-- Student Number -->
-                <div>
-                    <label for="student-number" class="block text-sm font-medium text-slate-700 mb-2 ml-1">
-                        <i class="fa-solid fa-list-ol text-teal-500 mr-2"></i>เลขที่
-                    </label>
-                    <div class="relative">
-                        <input type="number" id="student-number" name="student-number" min="1" max="50" required
-                            placeholder="กรอกเลขที่ของนักเรียน"
-                            class="input-field block w-full pl-4 pr-4 py-3.5 text-base border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent sm:text-sm rounded-2xl bg-white text-slate-700 shadow-sm transition-shadow">
-                    </div>
-                </div>
-
-                <!-- Student ID -->
-                <div>
-                    <label for="student-id" class="block text-sm font-medium text-slate-700 mb-2 ml-1">
-                        <i class="fa-solid fa-id-card text-teal-500 mr-2"></i>รหัสประจำตัวนักเรียน
-                    </label>
-                    <div class="relative">
-                        <input type="text" id="student-id" name="student-id" required
-                            placeholder="กรอกรหัสประจำตัว 5 หลัก" pattern="[0-9]{5}" maxlength="5"
-                            class="input-field block w-full pl-4 pr-4 py-3.5 text-base border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent sm:text-sm rounded-2xl bg-white text-slate-700 shadow-sm transition-shadow">
-                    </div>
-                    <p class="mt-2 text-xs text-slate-500 ml-1">* ใช้รหัสประจำตัวเพื่อยืนยันตัวตน</p>
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit"
-                    class="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-sm text-sm font-bold text-white bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
-                    <i class="fa-solid fa-magnifying-glass mr-2 mt-0.5"></i> ตรวจสอบคะแนน
-                </button>
-            </form>
-            
-            <!-- Loading Indicator -->
-            <div id="loading" class="hidden justify-center items-center py-8">
-                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-teal-500"></i>
-                <span class="ml-3 text-teal-700 font-medium">กำลังค้นหาข้อมูล...</span>
-            </div>
-            
-            <!-- Error Message -->
-            <div id="error-message" class="hidden mt-4 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm flex items-start">
-                <i class="fa-solid fa-circle-exclamation mt-0.5 mr-2"></i>
-                <span id="error-text">ไม่พบข้อมูลนักเรียน กรุณาตรวจสอบห้อง เลขที่ และรหัสประจำตัวอีกครั้ง</span>
-            </div>
-        </div>
-
-        <!-- Result Card -->
-        <div id="result-card" class="glass-panel rounded-3xl overflow-hidden mt-6 animate-fade-in-up">
-            <!-- Result Header -->
-            <div class="bg-gradient-to-r from-teal-600 to-cyan-600 p-6 text-white relative">
-                <button id="btn-back" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-                <div class="flex items-center gap-4 mb-2">
-                    <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border border-white/30">
-                        <i class="fa-solid fa-user text-xl"></i>
-                    </div>
-                    <div>
-                        <h2 id="res-name" class="text-xl font-bold leading-tight">ชื่อ-นามสกุล</h2>
-                        <p class="text-teal-100 text-sm">
-                            ม.<span id="res-room"></span> | เลขที่ <span id="res-number"></span>
-                        </p>
-                    </div>
-                </div>
-                <div class="mt-4 pt-4 border-t border-white/20 flex justify-between items-center">
-                    <span class="text-sm text-teal-100">รหัสประจำตัว</span>
-                    <span id="res-id" class="font-mono font-semibold tracking-wider"></span>
-                </div>
-            </div>
-
-            <!-- Score Details -->
-            <div class="p-6">
-                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b pb-2">รายละเอียดคะแนน</h3>
-                
-                <div class="space-y-4">
-                    <!-- Score Item -->
-                    <div class="flex justify-between items-center p-3 rounded-xl bg-teal-50/50 hover:bg-teal-50 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-sm">
-                                <i class="fa-solid fa-book-open"></i>
-                            </div>
-                            <span class="font-medium text-slate-700">คะแนนเก็บ</span>
-                        </div>
-                        <div class="text-right">
-                            <span id="res-score-เก็บ" class="text-lg font-bold text-teal-700">--</span>
-                            <span class="text-xs text-slate-500">/ 30</span>
-                        </div>
-                    </div>
-
-                    <!-- Score Item -->
-                    <div class="flex justify-between items-center p-3 rounded-xl bg-cyan-50/50 hover:bg-cyan-50 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center text-sm">
-                                <i class="fa-solid fa-file-pen"></i>
-                            </div>
-                            <span class="font-medium text-slate-700">คะแนนกลางภาค</span>
-                        </div>
-                        <div class="text-right">
-                            <span id="res-score-กลางภาค" class="text-lg font-bold text-cyan-700">--</span>
-                            <span class="text-xs text-slate-500">/ 20</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Total Score -->
-                <div class="mt-6 pt-5 border-t border-slate-100">
-                    <div class="flex justify-between items-end bg-gradient-to-br from-slate-50 to-teal-50 p-4 rounded-2xl border border-teal-100/50">
-                        <div>
-                            <span class="block text-sm text-slate-500 mb-1">คะแนนรวมขณะนี้</span>
-                            <span class="text-xs text-teal-600 font-medium px-2 py-1 bg-teal-100 rounded-md">
-                                <i class="fa-solid fa-chart-pie mr-1"></i> รวม 50 คะแนน
-                            </span>
-                        </div>
-                        <div class="text-right">
-                            <span id="res-total" class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600">--</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Feedback / Status (Optional feature based on score) -->
-                <div id="status-message" class="mt-4 text-center text-sm font-medium py-2 rounded-lg bg-slate-50 text-slate-600">
-                    <!-- Dynamic message -->
-                </div>
-            </div>
-        </div>
-        
-        <!-- Footer -->
+เปลี่ยน Script ทั้งหมดเพื่อเชื่อมต่อ API กับ Google Sheets ของคุณ (ให้แทนที่ `<script> ... </script>` ด้านล่างสุดทั้งหมดครับ)
+```html:ระบบตรวจสอบคะแนนสอบ:index.html
+<!-- ... existing code ... -->
         <div class="mt-8 text-center text-xs text-slate-400">
             &copy; 2026 ระบบตรวจสอบคะแนนรายวิชา<br>
             พัฒนาเพื่อการศึกษา
@@ -281,70 +35,89 @@
     </div>
 
     <script>
-        // --- Mock Data Structure ---
-        // In a real scenario, this would be fetched from a server or parsed from the CSV file.
-        // For this frontend-only implementation, we will simulate the data structure that would
-        // be derived from "คะแนนกลางภาค_ค22101.csv"
-        
-        const mockStudentData = [
-            { room: "2/1", number: 1, id: "10001", name: "เด็กชาย สมชาย ใจดี", score_keep: 25, score_mid: 18 },
-            { room: "2/1", number: 2, id: "10002", name: "เด็กหญิง สมหญิง รักเรียน", score_keep: 28, score_mid: 19 },
-            { room: "2/2", number: 1, id: "10003", name: "เด็กชาย มานะ อดทน", score_keep: 20, score_mid: 12 },
-            { room: "2/2", number: 2, id: "10004", name: "เด็กหญิง ปิติ ยินดี", score_keep: 22, score_mid: 15 },
-            { room: "2/3", number: 1, id: "10005", name: "เด็กชาย วีระ กล้าหาญ", score_keep: 29, score_mid: 20 },
-        ];
-
-        // --- CSV Parsing Utility (For future integration) ---
-        // If you were to load "คะแนนกลางภาค_ค22101.csv" via fetch() or File API,
-        // you would parse it similar to this function.
-        function parseCSV(csvText) {
-            const lines = csvText.split('\n');
-            const result = [];
-            const headers = lines[0].split(',').map(header => header.trim());
-            
-            for(let i = 1; i < lines.length; i++) {
-                if(!lines[i]) continue;
-                const obj = {};
-                const currentline = lines[i].split(',');
-                
-                for(let j = 0; j < headers.length; j++) {
-                    obj[headers[j]] = currentline[j] ? currentline[j].trim() : '';
-                }
-                result.push(obj);
-            }
-            return result;
-        }
+        // --- Globals ---
+        let studentData = [];
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSbqAjvy5PrTTaYR5idww0FFJG2dJKisKB0utndZA-q9EDCMk5uCPoYnZMIJp9-HH-iOJU-92js7ll/pub?gid=1421287147&single=true&output=csv";
 
         // --- DOM Elements ---
         const form = document.getElementById('check-form');
         const searchCard = document.getElementById('search-card');
         const resultCard = document.getElementById('result-card');
         const loadingDiv = document.getElementById('loading');
+        const initialLoadingDiv = document.getElementById('initial-loading');
         const errorDiv = document.getElementById('error-message');
         const btnBack = document.getElementById('btn-back');
         const roomSelect = document.getElementById('room');
 
-        // --- Initialize Data ---
+        // --- Initialize Data via PapaParse ---
         function init() {
-            // Populate Room Select options based on available data or a predefined list
-            const rooms = ["2/1", "2/2", "2/3", "2/4", "2/5", "2/6", "2/7", "2/8"]; // Example rooms
+            Papa.parse(CSV_URL, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    processData(results.data);
+                },
+                error: function(err) {
+                    console.error("Error loading CSV:", err);
+                    initialLoadingDiv.innerHTML = `
+                        <i class="fa-solid fa-circle-xmark text-4xl text-red-500 mb-4"></i>
+                        <p class="text-red-600 font-medium text-center px-4">ไม่สามารถโหลดข้อมูลได้<br>กรุณารีเฟรชหน้าเว็บอีกครั้ง</p>
+                    `;
+                }
+            });
+        }
+
+        // --- Process CSV Data & Dynamically Guess Columns ---
+        function processData(rawData) {
+            studentData = rawData.map(row => {
+                const keys = Object.keys(row);
+                // Helper to find column name by matching keywords (เผื่อหัวตารางตั้งชื่อมาหลากหลายแบบ)
+                const findKey = (keywords) => keys.find(k => keywords.some(kw => k.toLowerCase().includes(kw.toLowerCase()))) || null;
+                
+                const roomKey = findKey(['ห้อง', 'room', 'ชั้น']);
+                const numberKey = findKey(['เลขที่', 'no', 'number']);
+                const idKey = findKey(['รหัส', 'id', 'ประจำตัว']);
+                const nameKey = findKey(['ชื่อ', 'name', 'สกุล']);
+                const keepKey = findKey(['เก็บ', 'keep', 'ก่อนกลางภาค']);
+                const midKey = findKey(['กลางภาค', 'mid', 'สอบ']);
+
+                return {
+                    room: roomKey ? String(row[roomKey]).trim() : "",
+                    number: numberKey ? parseInt(row[numberKey]) : 0,
+                    id: idKey ? String(row[idKey]).trim() : "",
+                    name: nameKey ? row[nameKey] : "ไม่ระบุชื่อ",
+                    score_keep: keepKey ? row[keepKey] : "0",
+                    score_mid: midKey ? row[midKey] : "0"
+                };
+            }).filter(s => s.id && s.id !== ""); // Filter out invalid rows
+
+            // Extract unique rooms and sort them
+            const uniqueRooms = [...new Set(studentData.map(s => s.room).filter(r => r))]
+                .sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
             
-            rooms.forEach(room => {
+            // Populate Dropdown
+            uniqueRooms.forEach(room => {
                 const option = document.createElement('option');
                 option.value = room;
-                option.textContent = `ม.${room}`;
+                // Format room name for display (เช่น ถ้าเขียนมาแค่ 1 ให้กลายเป็น ห้อง 1, ถ้ามี / ให้เป็น ม.2/1)
+                option.textContent = room.startsWith('ม.') ? room : (room.includes('/') ? `ม.${room}` : `ห้อง ${room}`);
                 roomSelect.appendChild(option);
             });
+
+            // Fade out loading screen
+            initialLoadingDiv.style.opacity = '0';
+            setTimeout(() => {
+                initialLoadingDiv.classList.add('hidden');
+            }, 500);
         }
 
         // --- Event Listeners ---
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Hide previous errors
             errorDiv.classList.add('hidden');
             
-            // Get input values
             const room = document.getElementById('room').value;
             const number = parseInt(document.getElementById('student-number').value);
             const id = document.getElementById('student-id').value;
@@ -354,59 +127,43 @@
                 return;
             }
 
-            // UI Transition: Show loading
             form.classList.add('hidden');
             loadingDiv.classList.remove('hidden');
             loadingDiv.classList.add('flex');
 
-            // Simulate API call / Search delay
             setTimeout(() => {
                 searchStudent(room, number, id);
-            }, 800);
+            }, 600);
         });
 
         btnBack.addEventListener('click', function() {
-            // Hide result, show form
             resultCard.style.display = 'none';
             searchCard.classList.remove('hidden');
             form.classList.remove('hidden');
-            
-            // Clear inputs (optional, usually better UX to keep them)
-            // form.reset();
-            
-            // Scroll to top smoothly
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
         // --- Core Logic ---
         function searchStudent(room, number, id) {
-            // In a real application, this is where you would query your parsed CSV data
-            // For example:
-            // const student = parsedCSVData.find(s => s.Room === room && parseInt(s.Number) === number && s.StudentID === id);
-            
-            // Using mock data for demonstration
-            const student = mockStudentData.find(s => 
+            // Find student from loaded CSV data
+            const student = studentData.find(s => 
                 s.room === room && 
                 s.number === number && 
                 s.id === id
             );
 
-            // Hide loading
             loadingDiv.classList.add('hidden');
             loadingDiv.classList.remove('flex');
 
             if (student) {
-                // Success: Populate and show result
                 displayResult(student);
             } else {
-                // Not found: Show form again and display error
                 form.classList.remove('hidden');
                 showError('ไม่พบข้อมูลนักเรียน กรุณาตรวจสอบความถูกต้องของข้อมูลอีกครั้ง');
             }
         }
 
         function displayResult(student) {
-            // Populate DOM elements
             document.getElementById('res-name').textContent = student.name;
             document.getElementById('res-room').textContent = student.room;
             document.getElementById('res-number').textContent = student.number;
@@ -418,7 +175,6 @@
             const total = (Number(student.score_keep) || 0) + (Number(student.score_mid) || 0);
             document.getElementById('res-total').textContent = total;
 
-            // Set status message based on total
             const statusMsg = document.getElementById('status-message');
             if(total >= 40) {
                 statusMsg.textContent = "เยี่ยมมาก! พยายามรักษามาตรฐานไว้นะ";
@@ -431,27 +187,23 @@
                 statusMsg.className = "mt-4 text-center text-sm font-medium py-2 rounded-lg bg-amber-50 text-amber-700 border border-amber-100";
             }
 
-            // Hide search card, show result card
             searchCard.classList.add('hidden');
             resultCard.style.display = 'block';
             
-            // Re-trigger animation
             resultCard.classList.remove('animate-fade-in-up');
-            void resultCard.offsetWidth; // trigger reflow
+            void resultCard.offsetWidth;
             resultCard.classList.add('animate-fade-in-up');
         }
 
         function showError(message) {
             document.getElementById('error-text').textContent = message;
             errorDiv.classList.remove('hidden');
-            // Shake animation for error
             searchCard.classList.add('animate-[shake_0.5s_ease-in-out]');
             setTimeout(() => {
                 searchCard.classList.remove('animate-[shake_0.5s_ease-in-out]');
             }, 500);
         }
 
-        // Add custom shake keyframes dynamically for error state
         const style = document.createElement('style');
         style.innerHTML = `
             @keyframes shake {
@@ -462,7 +214,6 @@
         `;
         document.head.appendChild(style);
 
-        // Run init on load
         document.addEventListener('DOMContentLoaded', init);
 
     </script>
